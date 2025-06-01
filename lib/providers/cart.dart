@@ -1,55 +1,27 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:tokopedia_clone/models/product.dart';
 
-class CartItem {
-  final Product product;
-  int quantity;
-
-  CartItem({required this.product, required this.quantity});
-
-  toStringAsFixed(int i) {}
-}
-
 class Cart with ChangeNotifier {
-  Map<String, CartItem> _items = {};
+  List<Product> _items = [];
 
-  Map<String, CartItem> get items => _items;
-
-  int get itemCount => _items.length;
-
-  double get totalAmount {
-    double total = 0.0;
-    _items.forEach((key, cartItem) {
-      total += cartItem.product.price * cartItem.quantity;
-    });
-    return total;
-  }
+  List<Product> get items => _items;
 
   void addItem(Product product) {
-    if (_items.containsKey(product.id)) {
-      _items.update(
-        product.id,
-        (existing) => CartItem(
-          product: existing.product,
-          quantity: existing.quantity + 1,
-        ),
-      );
-    } else {
-      _items.putIfAbsent(
-        product.id,
-        () => CartItem(product: product, quantity: 1),
-      );
-    }
+    _items.add(product);
     notifyListeners();
   }
 
   void removeItem(String productId) {
-    _items.remove(productId);
+    _items.removeWhere((item) => item.id == productId);
     notifyListeners();
   }
 
+  double get totalPrice {
+    return _items.fold(0, (sum, item) => sum + item.price);
+  }
+
   void clear() {
-    _items = {};
+    _items.clear();
     notifyListeners();
   }
 }
