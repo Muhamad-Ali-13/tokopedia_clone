@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tokopedia_clone/utils/utils.dart';
 
 class MainButton extends StatelessWidget {
   final Function? onTap;
@@ -14,7 +15,7 @@ class MainButton extends StatelessWidget {
     this.label,
     this.onTap,
     this.icon,
-    this.backgroundColor = Colors.green,
+    this.backgroundColor = Utils.mainThemeColor,
     this.iconColor = Colors.white,
     this.labelColor = Colors.white,
     this.enabled = true,

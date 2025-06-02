@@ -1,6 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:tokopedia_clone/screens/login_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:tokopedia_clone/providers/auth.dart';
+import 'package:tokopedia_clone/utils/utils.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -14,24 +15,45 @@ class _SplashScreenState extends State<SplashScreen> {
     _navigateToNextScreen();
   }
 
-  void _navigateToNextScreen() async {
-    await Future.delayed(const Duration(seconds: 2));
-    Navigator.of(context).pushReplacementNamed('/login'); // Gunakan named route
+  Future<void> _navigateToNextScreen() async {
+    await Future.delayed(Duration(seconds: 2)); // Simulasi loading selama 2 detik
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (authService.currentUser != null) {
+      Navigator.pushReplacementNamed(context, '/main');
+    } else {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.green, // Warna tema Tokopedia
+      backgroundColor: Utils.mainThemeColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.shopping_cart, color: Colors.white, size: 100),
+            Image.asset(
+              'assets/tokopedia.png',
+              height: 100,
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.store,
+                size: 100,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 20),
+            CircularProgressIndicator(
+              color: Colors.white,
+            ),
             SizedBox(height: 20),
             Text(
               'Tokopedia Clone',
-              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ],
         ),

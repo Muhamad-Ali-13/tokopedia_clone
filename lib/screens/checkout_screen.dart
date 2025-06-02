@@ -48,18 +48,23 @@ class CheckoutScreen extends StatelessWidget {
                           final transaction = Transaction(
                             id: '',
                             userId: authService.currentUser!.uid,
-                            products: cart.items,
+                            items: cart.items.map((product) => {
+                              'id': product.id,
+                              'name': product.name,
+                              'price': product.price,
+                              'imageURL': product.imageURL,
+                            }).toList(),
                             totalPrice: cart.totalPrice,
                             status: 'pending',
                             timestamp: DateTime.now(),
                           );
                           await FirebaseFirestore.instance.collection('transactions').add({
                             'userId': transaction.userId,
-                            'products': transaction.products.map((product) => {
-                              'id': product.id,
-                              'name': product.name,
-                              'price': product.price,
-                              'imageURL': product.imageURL,
+                            'products': transaction.items.map((product) => {
+                              'id': product['id'],
+                              'name': product['name'],
+                              'price': product['price'],
+                              'imageURL': product['imageURL'],
                             }).toList(),
                             'totalPrice': transaction.totalPrice,
                             'status': transaction.status,

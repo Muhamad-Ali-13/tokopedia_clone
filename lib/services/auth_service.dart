@@ -40,21 +40,6 @@ class AuthService with ChangeNotifier {
     }
   }
 
-  Future<bool> sendPasswordResetEmail(String email) async {
-    try {
-      await _auth.sendPasswordResetEmail(email: email);
-      _errorMessage = '';
-      _successMessage = 'Tautan reset kata sandi telah dikirim!';
-      notifyListeners();
-      return true;
-    } on FirebaseAuthException catch (e) {
-      _errorMessage = e.message ?? 'Terjadi kesalahan saat mengirim email reset';
-      _successMessage = '';
-      notifyListeners();
-      return false;
-    }
-  }
-
   Future<void> signOut() async {
     await _auth.signOut();
     notifyListeners();

@@ -11,6 +11,7 @@ import 'package:tokopedia_clone/screens/product_detail_screen.dart';
 import 'package:tokopedia_clone/screens/cart_screen.dart';
 import 'package:tokopedia_clone/screens/checkout_screen.dart';
 import 'package:tokopedia_clone/screens/transaction_screen.dart';
+import 'package:tokopedia_clone/screens/transaction_detail_screen.dart';
 import 'package:tokopedia_clone/screens/video_screen.dart';
 import 'package:tokopedia_clone/screens/promo_screen.dart';
 import 'package:tokopedia_clone/screens/account_screen.dart';
@@ -59,8 +60,11 @@ class MyApp extends StatelessWidget {
         '/main': (context) => MainScreen(),
         '/product_detail': (context) => ProductDetailScreen(),
         '/cart': (context) => CartScreen(),
-        '/checkout': (context) => CheckoutScreen(),
         '/transactions': (context) => TransactionScreen(),
+        '/transaction_detail': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return TransactionDetailScreen(transaction: args['transaction']);
+        },
         '/video': (context) => VideoScreen(),
         '/promo': (context) => PromoScreen(),
         '/account': (context) => AccountScreen(),
