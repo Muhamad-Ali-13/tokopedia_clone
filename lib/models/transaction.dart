@@ -20,10 +20,10 @@ class Transaction {
   factory Transaction.fromJson(Map<String, dynamic> json, String id) {
     return Transaction(
       id: id,
-      userId: json['userId'] ?? '',
+      userId: json['userId'] as String? ?? '',
       items: List<Map<String, dynamic>>.from(json['items'] ?? []),
       totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0.0,
-      status: json['status'] ?? 'Diproses',
+      status: json['status'] as String? ?? 'Unknown',
       timestamp: (json['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }

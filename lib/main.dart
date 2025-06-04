@@ -15,6 +15,7 @@ import 'package:tokopedia_clone/screens/transaction_detail_screen.dart';
 import 'package:tokopedia_clone/screens/video_screen.dart';
 import 'package:tokopedia_clone/screens/promo_screen.dart';
 import 'package:tokopedia_clone/screens/account_screen.dart';
+import 'package:tokopedia_clone/services/product_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,11 +34,12 @@ void main() async {
   } catch (e) {
     print('Firebase initialization failed: $e');
   }
-  runApp(
+ runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => Cart()),
+        ChangeNotifierProvider(create: (_) => ProductService()), // Pastikan ini ada
       ],
       child: MyApp(),
     ),

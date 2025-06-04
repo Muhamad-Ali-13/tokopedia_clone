@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:tokopedia_clone/models/product.dart';
 import 'package:tokopedia_clone/providers/cart.dart';
+import 'package:tokopedia_clone/services/product_service.dart';
 import 'package:tokopedia_clone/utils/utils.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -11,8 +11,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String? selectedTag;
-
   final List<String> categories = [
     'MURAH MERIAH',
     'BELI LOKAL',
@@ -24,15 +22,26 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Tidak perlu inisialisasi tambahan karena ProductService mengelola state
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final productService = Provider.of<ProductService>(context);
+
     return Scaffold(
       appBar: AppBar(
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Image.asset(
-            'assets/tokopedia.png', // Ganti dengan logo Tokopedia dari assets
+            'assets/tokopedia.png',
             height: 30,
-            errorBuilder: (context, error, stackTrace) => Icon(Icons.store, color: Colors.white),
+            errorBuilder: (context, error, stackTrace) {
+              print('Error loading logo: $error'); // Log error asset
+              return Icon(Icons.store, color: Colors.white);
+            },
           ),
         ),
         title: Container(
@@ -41,11 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),
             boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
+              BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
             ],
           ),
           child: TextField(
@@ -86,14 +91,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: selectedTag == category ? Utils.mainThemeColor : Colors.black87,
+                        color: productService.selectedTag == category ? Utils.mainThemeColor : Colors.black87,
                       ),
                     ),
-                    selected: selectedTag == category,
+                    selected: productService.selectedTag == category,
                     onSelected: (selected) {
-                      setState(() {
-                        selectedTag = selected ? category : null;
-                      });
+                      productService.setSelectedTag(selected ? category : null);
                     },
                     selectedColor: Utils.mainThemeColor.withOpacity(0.2),
                     backgroundColor: Colors.grey[200],
@@ -107,10 +110,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('products').snapshots(),
+            child: StreamBuilder<List<Product>>(
+              stream: productService.productsStream,
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
+                  print('Error fetching products: ${snapshot.error}'); // Log error untuk debugging
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -118,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Icon(Icons.error_outline, color: Colors.red, size: 40),
                         SizedBox(height: 10),
                         Text(
-                          'Terjadi kesalahan: ${snapshot.error}',
+                          'Terjadi kesalahan: ${snapshot.error.toString().split('\n').first}', // Ambil baris pertama error
                           style: TextStyle(color: Colors.red),
                           textAlign: TextAlign.center,
                         ),
@@ -128,13 +132,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
-                    child: CircularProgressIndicator(
-                      color: Utils.mainThemeColor,
-                    ),
+                    child: CircularProgressIndicator(color: Utils.mainThemeColor),
                   );
                 }
-                final data = snapshot.data;
-                if (data == null || data.docs.isEmpty) {
+                final products = snapshot.data ?? [];
+                if (products.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -150,39 +152,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }
 
-                var products = data.docs.map((doc) {
-                  try {
-                    return Product(
-                      id: doc.id,
-                      name: doc['name'] as String? ?? 'Nama tidak tersedia',
-                      price: (doc['price'] as num?)?.toDouble() ?? 0.0,
-                      imageURL: (doc['imageURL'] as String?) ?? '',
-                      rating: (doc['rating'] as num?)?.toDouble() ?? 0.0,
-                      soldCount: (doc['soldCount'] as int?) ?? 0,
-                      location: (doc['location'] as String?) ?? '',
-                      tags: List<String>.from(doc['tags'] ?? []),
-                      discount: (doc['discount'] as num?)?.toDouble(),
-                    );
-                  } catch (e) {
-                    print('Error mapping product: $e');
-                    return Product(
-                      id: doc.id,
-                      name: 'Nama tidak tersedia',
-                      price: 0.0,
-                      imageURL: '',
-                      rating: 0.0,
-                      soldCount: 0,
-                      location: '',
-                      tags: [],
-                      discount: null,
-                    );
-                  }
-                }).toList();
-
-                if (selectedTag != null) {
-                  products = products.where((product) => product.tags.contains(selectedTag)).toList();
-                }
-
                 return Consumer<Cart>(
                   builder: (context, cart, child) {
                     return GridView.builder(
@@ -191,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisCount: 2,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
-                        childAspectRatio: 0.75, // Disesuaikan untuk layout yang lebih proporsional
+                        childAspectRatio: 0.75,
                       ),
                       itemCount: products.length,
                       itemBuilder: (context, index) {
@@ -217,25 +186,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                           width: double.infinity,
                                           height: 120,
                                           errorBuilder: (context, error, stackTrace) {
+                                            print('Error loading image: $error'); // Log error image
                                             return Container(
                                               height: 120,
                                               color: Colors.grey[200],
-                                              child: Icon(
-                                                Icons.image_not_supported,
-                                                size: 50,
-                                                color: Colors.grey,
-                                              ),
+                                              child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
                                             );
                                           },
                                         )
                                       : Container(
                                           height: 120,
                                           color: Colors.grey[200],
-                                          child: Icon(
-                                            Icons.image_not_supported,
-                                            size: 50,
-                                            color: Colors.grey,
-                                          ),
+                                          child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
                                         ),
                                 ),
                                 Padding(

@@ -1,23 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:tokopedia_clone/models/product.dart';
 
-class Cart with ChangeNotifier {
-  List<Product> _items = [];
+class CartItem {
+  final Product product;
+  int quantity;
 
-  List<Product> get items => _items;
+  CartItem({required this.product, this.quantity = 1});
+}
+
+class Cart with ChangeNotifier {
+  final List<CartItem> _items = [];
+
+  List<CartItem> get items => _items;
+
+  int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
+
+  double get totalPrice => _items.fold(0, (sum, item) => sum + (item.product.price * item.quantity));
 
   void addItem(Product product) {
-    _items.add(product);
+    final CartItem? existingItem = _items.where((item) => item.product.id == product.id).isNotEmpty
+        ? _items.firstWhere((item) => item.product.id == product.id)
+        : null;
+    if (existingItem != null) {
+      existingItem.quantity++;
+    } else {
+      _items.add(CartItem(product: product));
+    }
+    notifyListeners();
+  }
+
+  void incrementQuantity(String productId) {
+    final item = _items.firstWhere((item) => item.product.id == productId);
+    item.quantity++;
+    notifyListeners();
+  }
+
+  void decrementQuantity(String productId) {
+    final item = _items.firstWhere((item) => item.product.id == productId);
+    if (item.quantity > 1) {
+      item.quantity--;
+    } else {
+      _items.removeWhere((item) => item.product.id == productId);
+    }
     notifyListeners();
   }
 
   void removeItem(String productId) {
-    _items.removeWhere((item) => item.id == productId);
+    _items.removeWhere((item) => item.product.id == productId);
     notifyListeners();
-  }
-
-  double get totalPrice {
-    return _items.fold(0, (sum, item) => sum + item.price);
   }
 
   void clear() {
