@@ -1,67 +1,53 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:tokopedia_clone/models/product.dart';
 import 'dart:async';
 
-class ProductService extends ChangeNotifier {
-  final List<Product> _products = [];
+class ProductService with ChangeNotifier {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String? _selectedTag;
-  final StreamController<List<Product>> _productController = StreamController<List<Product>>.broadcast();
+  final StreamController<List<Product>> _productsController = StreamController<List<Product>>.broadcast();
 
   ProductService() {
-    _fetchProducts();
+    print('ProductService initialized');
+    fetchProducts();
   }
 
-  Stream<List<Product>> get productsStream => _productController.stream;
-
   String? get selectedTag => _selectedTag;
+  Stream<List<Product>> get productsStream => _productsController.stream;
 
   void setSelectedTag(String? tag) {
+    print('Setting selected tag to: $tag');
     _selectedTag = tag;
-    _filterProducts();
+    fetchProducts();
     notifyListeners();
   }
 
-  void _fetchProducts() {
-    FirebaseFirestore.instance
-        .collection('products')
-        .snapshots()
-        .listen((QuerySnapshot snapshot) {
-      _products.clear();
-      for (var doc in snapshot.docs) {
-        try {
-          final product = Product(
-            id: doc.id,
-            name: doc['name'] as String? ?? 'Nama tidak tersedia',
-            price: (doc['price'] as num?)?.toDouble() ?? 0.0,
-            imageURL: (doc['imageURL'] as String?) ?? '',
-            rating: (doc['rating'] as num?)?.toDouble() ?? 0.0,
-            soldCount: (doc['soldCount'] as int?) ?? 0,
-            location: (doc['location'] as String?) ?? '',
-            tags: List<String>.from(doc['tags'] ?? []),
-            discount: (doc['discount'] as num?)?.toDouble(),
-          );
-          _products.add(product);
-        } catch (e) {
-          print('Error mapping product ${doc.id}: $e');
-        }
+  Future<void> fetchProducts() async {
+    print('Fetching products from Firestore...');
+    try {
+      QuerySnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('products').get();
+      print('Fetched ${snapshot.docs.length} documents');
+      if (snapshot.docs.isEmpty) {
+        print('No products found in Firestore');
+        _productsController.add([]);
+        return;
       }
-      _filterProducts();
-    }, onError: (error) {
-      print('Error fetching products: $error');
-    });
-  }
-
-  void _filterProducts() {
-    final filteredProducts = _selectedTag == null
-        ? List<Product>.from(_products)
-        : _products.where((product) => product.tags.contains(_selectedTag)).toList();
-    _productController.add(filteredProducts);
+      final products = snapshot.docs
+          .map((doc) => Product.fromJson(doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+      print('Parsed products: ${products.map((p) => p.name).toList()}');
+      _productsController.add(products);
+    } catch (e, stackTrace) {
+      print('Error fetching products: $e\nStackTrace: $stackTrace');
+      _productsController.addError(e);
+    }
   }
 
   @override
   void dispose() {
-    _productController.close();
+    print('Disposing ProductService');
+    _productsController.close();
     super.dispose();
   }
 }

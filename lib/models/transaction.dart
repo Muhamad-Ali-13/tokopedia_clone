@@ -17,14 +17,25 @@ class Transaction {
     required this.timestamp,
   });
 
-  factory Transaction.fromJson(Map<String, dynamic> json, String id) {
+  factory Transaction.fromFirestore(Map<String, dynamic> data, String id) {
+    print('Parsing transaction with ID: $id, Data: $data');
     return Transaction(
       id: id,
-      userId: json['userId'] as String? ?? '',
-      items: List<Map<String, dynamic>>.from(json['items'] ?? []),
-      totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0.0,
-      status: json['status'] as String? ?? 'Unknown',
-      timestamp: (json['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      userId: data['userId'] as String? ?? '',
+      items: List<Map<String, dynamic>>.from(data['items'] ?? []),
+      totalPrice: (data['totalPrice'] as num?)?.toDouble() ?? 0.0,
+      status: data['status'] as String? ?? 'Unknown',
+      timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'items': items,
+      'totalPrice': totalPrice,
+      'status': status,
+      'timestamp': Timestamp.fromDate(timestamp),
+    };
   }
 }

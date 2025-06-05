@@ -55,3 +55,13 @@ class Cart with ChangeNotifier {
     notifyListeners();
   }
 }
+class cart with ChangeNotifier {
+  final Map<String, Product> _items = {};
+
+  Map<String, Product> get items => _items;
+
+  void addItem(Product product) {
+    _items[product.id] = product;
+    notifyListeners();
+  }
+}

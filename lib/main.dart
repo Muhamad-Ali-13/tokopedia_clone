@@ -3,18 +3,18 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:tokopedia_clone/providers/auth.dart';
 import 'package:tokopedia_clone/providers/cart.dart';
+import 'package:tokopedia_clone/providers/wishlist.dart';
 import 'package:tokopedia_clone/screens/splash_screen.dart';
 import 'package:tokopedia_clone/screens/login_screen.dart';
 import 'package:tokopedia_clone/screens/register_screen.dart';
 import 'package:tokopedia_clone/screens/home_screen.dart';
 import 'package:tokopedia_clone/screens/product_detail_screen.dart';
 import 'package:tokopedia_clone/screens/cart_screen.dart';
-import 'package:tokopedia_clone/screens/checkout_screen.dart';
 import 'package:tokopedia_clone/screens/transaction_screen.dart';
-import 'package:tokopedia_clone/screens/transaction_detail_screen.dart';
 import 'package:tokopedia_clone/screens/video_screen.dart';
 import 'package:tokopedia_clone/screens/promo_screen.dart';
 import 'package:tokopedia_clone/screens/account_screen.dart';
+import 'package:tokopedia_clone/screens/wishlist_screen.dart';
 import 'package:tokopedia_clone/services/product_service.dart';
 
 void main() async {
@@ -39,7 +39,8 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => Cart()),
-        ChangeNotifierProvider(create: (_) => ProductService()), // Pastikan ini ada
+        ChangeNotifierProvider(create: (_) => ProductService()),
+        ChangeNotifierProvider(create: (_) => Wishlist()),// Pastikan ini ada
       ],
       child: MyApp(),
     ),
@@ -63,13 +64,11 @@ class MyApp extends StatelessWidget {
         '/product_detail': (context) => ProductDetailScreen(),
         '/cart': (context) => CartScreen(),
         '/transactions': (context) => TransactionScreen(),
-        '/transaction_detail': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-          return TransactionDetailScreen(transaction: args['transaction']);
-        },
         '/video': (context) => VideoScreen(),
         '/promo': (context) => PromoScreen(),
         '/account': (context) => AccountScreen(),
+        '/wishlist': (context) => WishlistScreen(),
+        '/checkout': (context) => CartScreen(), // Ganti dengan CheckoutScreen jika ada
       },
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tokopedia_clone/providers/cart.dart';
-import 'package:tokopedia_clone/utils/utils.dart'; // Pastikan Utils diimpor
+import 'package:tokopedia_clone/utils/utils.dart';
 
 class CartScreen extends StatelessWidget {
   @override
@@ -10,7 +10,7 @@ class CartScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'Keranjang',
           style: TextStyle(
             color: Colors.white,
@@ -18,115 +18,154 @@ class CartScreen extends StatelessWidget {
             fontSize: 18,
           ),
         ),
-        backgroundColor: Utils.mainThemeColor, // Warna hijau Tokopedia
+        backgroundColor: Utils.mainThemeColor,
         elevation: 2,
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.favorite_border,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.pushNamed(context, '/wishlist');
+            },
+            tooltip: 'Wishlist',
+          ),
+        ],
       ),
       body: cart.items.isEmpty
           ? _buildEmptyCart(context)
-          : ListView.builder(
-              padding: EdgeInsets.all(12),
-              itemCount: cart.items.length,
-              itemBuilder: (context, index) {
-                final cartItem = cart.items[index];
-                return Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+          : Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: cart.items.length,
+                    itemBuilder: (context, index) {
+                      final cartItem = cart.items[index];
+                      return Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(12),
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: cartItem.product.imageURL.isNotEmpty
+                                ? Image.network(
+                                    cartItem.product.imageURL,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, size: 40),
+                                  )
+                                : const Icon(Icons.image_not_supported, size: 40),
+                          ),
+                          title: Text(
+                            cartItem.product.name,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text(
+                                'Rp ${cartItem.product.price.toStringAsFixed(0)}',
+                                style: const TextStyle(fontSize: 14, color: Utils.mainThemeColor),
+                              ),
+                              if ((cartItem.product.discount ?? 0) > 0)
+                                Text(
+                                  'Rp ${(cartItem.product.priceBeforeDiscount ?? cartItem.product.price).toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline, color: Colors.grey),
+                                onPressed: cartItem.quantity > 1
+                                    ? () => cart.decrementQuantity(cartItem.product.id)
+                                    : null,
+                              ),
+                              Text(
+                                cartItem.quantity.toString(),
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline, color: Utils.mainThemeColor),
+                                onPressed: () => cart.incrementQuantity(cartItem.product.id),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                onPressed: () => cart.removeItem(cartItem.product.id),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                  margin: EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    contentPadding: EdgeInsets.all(12),
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: cartItem.product.imageURL.isNotEmpty
-                          ? Image.network(
-                              cartItem.product.imageURL,
-                              width: 60,
-                              height: 60,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Icon(Icons.image_not_supported, size: 40),
-                            )
-                          : Icon(Icons.image_not_supported, size: 40),
-                    ),
-                    title: Text(
-                      cartItem.product.name,
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: 4),
-                        Text(
-                          'Rp ${cartItem.product.price.toStringAsFixed(0)}',
-                          style: TextStyle(fontSize: 14, color: Utils.mainThemeColor),
-                        ),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.remove_circle_outline, color: Colors.grey),
-                          onPressed: cartItem.quantity > 1
-                              ? () => cart.decrementQuantity(cartItem.product.id)
-                              : null,
-                        ),
-                        Text(
-                          cartItem.quantity.toString(),
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.add_circle_outline, color: Utils.mainThemeColor),
-                          onPressed: () => cart.incrementQuantity(cartItem.product.id),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.delete_outline, color: Colors.red),
-                          onPressed: () => cart.removeItem(cartItem.product.id),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-      bottomNavigationBar: cart.items.isNotEmpty
-          ? Container(
-              padding: EdgeInsets.all(16),
-              color: Colors.white,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total (${cart.itemCount} item${cart.itemCount > 1 ? 's' : ''})',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        'Rp ${cart.totalPrice.toStringAsFixed(0)}',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Utils.mainThemeColor),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        spreadRadius: 2,
+                        blurRadius: 5,
+                        offset: const Offset(0, -2),
                       ),
                     ],
                   ),
-                  SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pushNamed(context, '/checkout'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Utils.mainThemeColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      minimumSize: Size(double.infinity, 50),
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: Text(
-                      'Checkout',
-                      style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Total (${cart.itemCount} item${cart.itemCount > 1 ? 's' : ''})',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Rp ${cart.totalPrice.toStringAsFixed(0)}',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Utils.mainThemeColor),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/checkout');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Utils.mainThemeColor,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          minimumSize: const Size(double.infinity, 50),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text(
+                          'Checkout',
+                          style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )
-          : null,
+                ),
+              ],
+            ),
     );
   }
 
@@ -140,26 +179,26 @@ class CartScreen extends StatelessWidget {
             size: 80,
             color: Colors.grey[400],
           ),
-          SizedBox(height: 20),
-          Text(
+          const SizedBox(height: 20),
+          const Text(
             'Keranjang kosong',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Text(
             'Tambahkan produk dari halaman utama untuk memulai belanja!',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 16, color: Colors.grey[600]),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Utils.mainThemeColor,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: Text(
+            child: const Text(
               'Belanja Sekarang',
               style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
             ),
