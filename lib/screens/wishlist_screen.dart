@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tokopedia_clone/models/product.dart';
 import 'package:tokopedia_clone/providers/cart.dart';
-import 'package:tokopedia_clone/providers/wishlist.dart';
+import 'package:tokopedia_clone/providers/wishlist.dart'; // Gunakan Wishlist provider
 import 'package:tokopedia_clone/utils/utils.dart';
 
 class WishlistScreen extends StatelessWidget {
@@ -9,8 +10,7 @@ class WishlistScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wishlist = Provider.of<Wishlist>(context);
-    final cart = Provider.of<Cart>(context, listen: false);
+    final wishlist = Provider.of<Wishlist>(context); // Gunakan Wishlist provider
 
     return Scaffold(
       appBar: AppBar(
@@ -86,6 +86,7 @@ class WishlistScreen extends StatelessWidget {
                         IconButton(
                           icon: const Icon(Icons.add_shopping_cart, color: Utils.mainThemeColor),
                           onPressed: () {
+                            final cart = Provider.of<Cart>(context, listen: false);
                             cart.addItem(product);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -97,7 +98,9 @@ class WishlistScreen extends StatelessWidget {
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete_outline, color: Colors.red),
-                          onPressed: () => wishlist.removeItem(product.id),
+                          onPressed: () {
+                            wishlist.removeItem(product.id!); // Hapus dari wishlist
+                          },
                         ),
                       ],
                     ),
@@ -131,7 +134,7 @@ class WishlistScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+            onPressed: () => Navigator.pushReplacementNamed(context, '/main'), // Kembali ke MainScreen
             style: ElevatedButton.styleFrom(
               backgroundColor: Utils.mainThemeColor,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

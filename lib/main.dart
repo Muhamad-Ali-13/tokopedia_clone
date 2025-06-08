@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:tokopedia_clone/models/product.dart';
 import 'package:tokopedia_clone/providers/auth.dart';
 import 'package:tokopedia_clone/providers/cart.dart';
 import 'package:tokopedia_clone/providers/wishlist.dart';
+import 'package:tokopedia_clone/screens/checkout_screen.dart';
 import 'package:tokopedia_clone/screens/splash_screen.dart';
 import 'package:tokopedia_clone/screens/login_screen.dart';
 import 'package:tokopedia_clone/screens/register_screen.dart';
@@ -34,13 +36,13 @@ void main() async {
   } catch (e) {
     print('Firebase initialization failed: $e');
   }
- runApp(
+  runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => Cart()),
         ChangeNotifierProvider(create: (_) => ProductService()),
-        ChangeNotifierProvider(create: (_) => Wishlist()),// Pastikan ini ada
+        ChangeNotifierProvider(create: (_) => Wishlist()),
       ],
       child: MyApp(),
     ),
@@ -52,23 +54,30 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Tokopedia Clone',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-      ),
+      theme: ThemeData(primarySwatch: Colors.green),
       debugShowCheckedModeBanner: false,
       home: SplashScreen(),
       routes: {
         '/login': (context) => LoginScreen(),
         '/register': (context) => RegisterScreen(),
         '/main': (context) => MainScreen(),
-        '/product_detail': (context) => ProductDetailScreen(),
         '/cart': (context) => CartScreen(),
         '/transactions': (context) => TransactionScreen(),
         '/video': (context) => VideoScreen(),
         '/promo': (context) => PromoScreen(),
         '/account': (context) => AccountScreen(),
         '/wishlist': (context) => WishlistScreen(),
-        '/checkout': (context) => CartScreen(), // Ganti dengan CheckoutScreen jika ada
+        '/checkout': (context) => CheckoutScreen() // Sementara arahkan ke CartScreen
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/product_detail') {
+          final productMap = settings.arguments as Map<String, dynamic>?;
+          return MaterialPageRoute(
+            builder: (context) => ProductDetailScreen(),
+            settings: settings,
+          );
+        }
+        return null;
       },
     );
   }

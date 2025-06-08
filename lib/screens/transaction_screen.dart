@@ -6,44 +6,25 @@ import 'package:tokopedia_clone/providers/auth.dart';
 import 'package:tokopedia_clone/utils/utils.dart';
 import 'package:intl/intl.dart';
 
-class TransactionScreen extends StatefulWidget {
-  @override
-  _TransactionScreenState createState() => _TransactionScreenState();
-}
-
-class _TransactionScreenState extends State<TransactionScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final List<String> _statusTabs = ['Semua', 'Dibayar', 'Diproses', 'Dikirim', 'Selesai', 'Dibatalkan'];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: _statusTabs.length, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
+class TransactionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
 
     if (authService.currentUser == null) {
+      print('No authenticated user found');
       return Scaffold(
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.lock, size: 50, color: Colors.grey),
-              const SizedBox(height: 10),
-              const Text(
+              Icon(Icons.lock, size: 50, color: Colors.grey),
+              SizedBox(height: 10),
+              Text(
                 'Silakan login terlebih dahulu',
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pushReplacementNamed(context, '/login');
@@ -52,7 +33,7 @@ class _TransactionScreenState extends State<TransactionScreen> with SingleTicker
                   backgroundColor: Utils.mainThemeColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text('Login', style: TextStyle(color: Colors.white)),
+                child: Text('Login', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -60,249 +41,252 @@ class _TransactionScreenState extends State<TransactionScreen> with SingleTicker
       );
     }
 
+    print('Authenticated userId: ${authService.currentUser!.uid}');
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Riwayat Transaksi',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Utils.mainThemeColor,
         elevation: 2,
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          tabs: _statusTabs.map((status) => Tab(text: status)).toList(),
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: _statusTabs.map((tabStatus) {
-          return StreamBuilder<QuerySnapshot>(
-            stream: _buildStream(authService.currentUser!.uid, tabStatus),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                print('Error fetching transactions: ${snapshot.error}');
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 40, color: Colors.red),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Terjadi kesalahan: ${snapshot.error.toString().split('\n').first}',
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('transactions')
+            .where('userId', isEqualTo: authService.currentUser!.uid)
+            .orderBy('timestamp', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            print('Error fetching transactions: ${snapshot.error}');
+            print('Stack trace: ${snapshot.stackTrace}');
+            String errorMessage = snapshot.error.toString();
+            if (errorMessage.contains('failed-precondition')) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 40, color: Colors.red),
+                    SizedBox(height: 10),
+                    Text(
+                      'Indeks diperlukan. Silakan buat indeks di Firebase Console dengan tautan ini:',
+                      style: TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 5),
+                    SelectableText(
+                      'https://console.firebase.google.com/v1/r/project/tokopediaclone-43eb0/firestore/indexes?create_composite=Cllwcm9qZWN0cy90b2tvcGVkaWFjbG9uZS00M2VIMC9kYXRhYmFzZXMvKGRIZmF1bHQpL2NvbGxlY3Rpb25Hcm91cHMvdHJhbnNhY3Rpb25zL2luZGV4ZXMvXxABGgoKBnVzZXJJZBABGgwKCXRpbWVzdGFtcBACGgwKCF9fbmFtZV9fEAI',
+                      style: TextStyle(color: Colors.blue),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushReplacementNamed(context, '/transaction');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Utils.mainThemeColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: () => (context as Element).markNeedsBuild(),
-                        child: const Text('Coba Lagi'),
+                      child: Text('Coba Lagi', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              );
+            } else if (errorMessage.contains('permission-denied')) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 40, color: Colors.red),
+                    SizedBox(height: 10),
+                    Text(
+                      'Akses ditolak. Periksa aturan keamanan di Firebase Console.',
+                      style: TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushReplacementNamed(context, '/transaction');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Utils.mainThemeColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                    ],
+                      child: Text('Coba Lagi', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 40, color: Colors.red),
+                  SizedBox(height: 10),
+                  Text(
+                    'Terjadi kesalahan: ${errorMessage.split('\n').first}',
+                    style: TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
                   ),
-                );
-              }
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: Utils.mainThemeColor));
-              }
-              final data = snapshot.data;
-              if (data == null || data.docs.isEmpty) {
-                return const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.history, size: 40, color: Colors.grey),
-                      SizedBox(height: 10),
-                      Text(
-                        'Tidak ada riwayat transaksi',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(context, '/transaction');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Utils.mainThemeColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: Text('Coba Lagi', style: TextStyle(color: Colors.white)),
                   ),
-                );
-              }
+                ],
+              ),
+            );
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator(color: Utils.mainThemeColor));
+          }
 
-              final transactions = data.docs.map((doc) {
+          final data = snapshot.data;
+          if (data == null || data.docs.isEmpty) {
+            print('No transactions found for userId: ${authService.currentUser!.uid}');
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.history, size: 40, color: Colors.grey),
+                  SizedBox(height: 10),
+                  Text(
+                    'Tidak ada riwayat transaksi',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final transactions = data.docs
+              .map((doc) {
                 try {
-                  return Transaction.fromFirestore(doc.data() as Map<String, dynamic>, doc.id);
+                  final data = doc.data() as Map<String, dynamic>? ?? {};
+                  print('Processing transaction doc: ${doc.id}, data: $data');
+                  return Transaction(
+                    id: doc.id,
+                    userId: data['userId'] as String? ?? '',
+                    items: (data['items'] as List<dynamic>?)?.map((item) => item as Map<String, dynamic>).toList() ?? [],
+                    totalPrice: (data['totalPrice'] as num?)?.toDouble() ?? 0.0,
+                    status: data['status'] as String? ?? 'Unknown',
+                    timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+                  );
                 } catch (e) {
                   print('Error mapping transaction ${doc.id}: $e');
                   return Transaction(
                     id: doc.id,
-                    userId: '',
+                    userId: authService.currentUser!.uid,
                     items: [],
                     totalPrice: 0.0,
                     status: 'Error',
                     timestamp: DateTime.now(),
                   );
                 }
-              }).toList();
+              })
+              .toList();
 
-              // Group transactions by date
-              final groupedTransactions = _groupTransactionsByDate(transactions);
+          if (transactions.isEmpty) {
+            print('Mapped transactions list is empty for userId: ${authService.currentUser!.uid}');
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.history, size: 40, color: Colors.grey),
+                  SizedBox(height: 10),
+                  Text(
+                    'Tidak ada riwayat transaksi',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          }
 
-              return ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: groupedTransactions.length,
-                itemBuilder: (context, index) {
-                  final dateGroup = groupedTransactions.keys.toList()[index];
-                  final groupItems = groupedTransactions[dateGroup]!;
-                  return Column(
+          return ListView.builder(
+            padding: EdgeInsets.all(12),
+            itemCount: transactions.length,
+            itemBuilder: (context, index) {
+              final transaction = transactions[index];
+              return Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                margin: EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  contentPadding: EdgeInsets.all(12),
+                  leading: _getStatusIcon(transaction.status),
+                  title: Text(
+                    'Transaksi #${transaction.id.substring(0, 8)}',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                        child: Text(
-                          dateGroup,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black54),
-                        ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Total: Rp ${transaction.totalPrice.toStringAsFixed(0)}',
+                        style: TextStyle(fontSize: 14, color: Utils.mainThemeColor),
                       ),
-                      ...groupItems.map((transaction) {
-                        return Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          margin: const EdgeInsets.only(bottom: 12, left: 12, right: 12),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.store, size: 20, color: Colors.grey),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Toko ${transaction.id.substring(0, 8)}',
-                                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                        ),
-                                      ],
-                                    ),
-                                    Chip(
-                                      label: Text(
-                                        transaction.status,
-                                        style: const TextStyle(fontSize: 12, color: Colors.white),
-                                      ),
-                                      backgroundColor: _getStatusColor(transaction.status),
-                                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                                    ),
-                                  ],
-                                ),
-                                const Divider(height: 20),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Tanggal: ${DateFormat('dd MMM yyyy, HH:mm').format(transaction.timestamp)}',
-                                          style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Total: Rp ${transaction.totalPrice.toStringAsFixed(0)}',
-                                          style: const TextStyle(fontSize: 14, color: Utils.mainThemeColor, fontWeight: FontWeight.bold),
-                                        ),
-                                      ],
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.pushNamed(
-                                          context,
-                                          '/transaction_detail',
-                                          arguments: {'transaction': transaction},
-                                        );
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        side: const BorderSide(color: Utils.mainThemeColor),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      ),
-                                      child: const Text(
-                                        'Lihat Detail',
-                                        style: TextStyle(fontSize: 12, color: Utils.mainThemeColor),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
+                      Text(
+                        'Tanggal: ${DateFormat('dd MMM yyyy HH:mm').format(transaction.timestamp)}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
                     ],
-                  );
-                },
+                  ),
+                  trailing: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/transaction_detail',
+                        arguments: transaction,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Utils.mainThemeColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    ),
+                    child: Text(
+                      'Lihat Detail',
+                      style: TextStyle(fontSize: 12, color: Colors.white),
+                    ),
+                  ),
+                ),
               );
             },
           );
-        }).toList(),
+        },
       ),
     );
   }
 
-  Stream<QuerySnapshot> _buildStream(String userId, String tabStatus) {
-    var query = FirebaseFirestore.instance
-        .collection('transactions')
-        .where('userId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true);
-
-    if (tabStatus != 'Semua') {
-      query = query.where('status', isEqualTo: tabStatus);
-    }
-
-    return query.snapshots();
-  }
-
-  Map<String, List<Transaction>> _groupTransactionsByDate(List<Transaction> transactions) {
-    final grouped = <String, List<Transaction>>{};
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-
-    for (var transaction in transactions) {
-      final date = DateTime(
-        transaction.timestamp.year,
-        transaction.timestamp.month,
-        transaction.timestamp.day,
-      );
-      String groupKey;
-
-      if (date == today) {
-        groupKey = 'Hari Ini';
-      } else if (date == yesterday) {
-        groupKey = 'Kemarin';
-      } else {
-        groupKey = DateFormat('dd MMM yyyy').format(date);
-      }
-
-      grouped.putIfAbsent(groupKey, () => []).add(transaction);
-    }
-
-    return grouped;
-  }
-
-  Color _getStatusColor(String status) {
+  Widget _getStatusIcon(String status) {
     switch (status.toLowerCase()) {
       case 'dibayar':
-        return Colors.blue;
+        return Icon(Icons.payment, color: Utils.mainThemeColor, size: 30);
       case 'diproses':
-        return Colors.orange;
+        return Icon(Icons.hourglass_empty, color: Utils.mainThemeColor, size: 30);
       case 'dikirim':
-        return Colors.purple;
+        return Icon(Icons.local_shipping, color: Utils.mainThemeColor, size: 30);
       case 'selesai':
-        return Utils.mainThemeColor;
+        return Icon(Icons.check_circle, color: Utils.mainThemeColor, size: 30);
       case 'dibatalkan':
-        return Colors.red;
+        return Icon(Icons.cancel, color: Colors.red, size: 30);
       default:
-        return Colors.grey;
+        return Icon(Icons.help_outline, color: Colors.grey, size: 30);
     }
   }
 }

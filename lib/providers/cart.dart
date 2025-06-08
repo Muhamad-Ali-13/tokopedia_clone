@@ -9,44 +9,47 @@ class CartItem {
 }
 
 class Cart with ChangeNotifier {
-  final List<CartItem> _items = [];
+  // Use Map for faster lookup by product ID
+  final Map<String, CartItem> _items = {};
+  final List<Product> _wishlist = [];
 
-  List<CartItem> get items => _items;
+  // Getters
+  List<CartItem> get items => _items.values.toList();
+  List<Product> get wishlist => _wishlist;
+  int get itemCount => _items.values.fold(0, (sum, item) => sum + item.quantity);
+  double get totalPrice => _items.values.fold(0, (sum, item) => sum + item.product.price * item.quantity);
 
-  int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
-
-  double get totalPrice => _items.fold(0, (sum, item) => sum + (item.product.price * item.quantity));
-
+  // Add or update item in cart
   void addItem(Product product) {
-    final CartItem? existingItem = _items.where((item) => item.product.id == product.id).isNotEmpty
-        ? _items.firstWhere((item) => item.product.id == product.id)
-        : null;
-    if (existingItem != null) {
-      existingItem.quantity++;
+    if (product.id == null) return;
+    if (_items.containsKey(product.id)) {
+      _items[product.id]!.quantity++;
     } else {
-      _items.add(CartItem(product: product));
+      _items[product.id!] = CartItem(product: product);
     }
     notifyListeners();
   }
 
   void incrementQuantity(String productId) {
-    final item = _items.firstWhere((item) => item.product.id == productId);
-    item.quantity++;
-    notifyListeners();
+    if (_items.containsKey(productId)) {
+      _items[productId]!.quantity++;
+      notifyListeners();
+    }
   }
 
   void decrementQuantity(String productId) {
-    final item = _items.firstWhere((item) => item.product.id == productId);
+    if (!_items.containsKey(productId)) return;
+    final item = _items[productId]!;
     if (item.quantity > 1) {
       item.quantity--;
     } else {
-      _items.removeWhere((item) => item.product.id == productId);
+      _items.remove(productId);
     }
     notifyListeners();
   }
 
   void removeItem(String productId) {
-    _items.removeWhere((item) => item.product.id == productId);
+    _items.remove(productId);
     notifyListeners();
   }
 
@@ -54,14 +57,21 @@ class Cart with ChangeNotifier {
     _items.clear();
     notifyListeners();
   }
-}
-class cart with ChangeNotifier {
-  final Map<String, Product> _items = {};
 
-  Map<String, Product> get items => _items;
-
-  void addItem(Product product) {
-    _items[product.id] = product;
+  // Wishlist toggle
+  void toggleWishlist(Product product) {
+    if (_wishlist.contains(product)) {
+      _wishlist.remove(product);
+    } else {
+      _wishlist.add(product);
+    }
     notifyListeners();
   }
+
+  double get discountItems {
+    // TODO: implement discount logic
+    return 0;
+  }
+
+  double get discountShipping => 0;
 }

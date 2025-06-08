@@ -6,7 +6,6 @@ class Product {
   final double rating;
   final int soldCount;
   final String location;
-  final List<String> tags;
   final int? discount;
 
   double get priceBeforeDiscount {
@@ -24,7 +23,6 @@ class Product {
     required this.rating,
     required this.soldCount,
     required this.location,
-    required this.tags,
     this.discount,
   });
 
@@ -79,20 +77,19 @@ class Product {
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       soldCount: (json['soldCount'] as num?)?.toInt() ?? 0,
       location: json['location'] as String? ?? 'Unknown',
-      tags: parseTags(json['tags']),
       discount: parseDiscount(json['discount']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
       'price': price,
       'imgURL': imageURL,
       'rating': rating,
       'soldCount': soldCount,
       'location': location,
-      'tags': tags,
       'discount': discount,
     };
   }

@@ -34,9 +34,29 @@ class ProductService with ChangeNotifier {
         return;
       }
       final products = snapshot.docs
-          .map((doc) => Product.fromJson(doc.data() as Map<String, dynamic>, doc.id))
+          .map((doc) {
+            try {
+              final data = doc.data();
+              if (data == null || data['name'] == null || data['price'] == null) {
+                print('Skipping invalid document ID: ${doc.id}, data: $data');
+                return null;
+              }
+              final product = Product.fromJson(data as Map<String, dynamic>, doc.id);
+              if (product.id != null && product.name != null && product.price != null) {
+                return product;
+              } else {
+                print('Invalid product data for doc ID: ${doc.id}, product: $product');
+                return null;
+              }
+            } catch (e) {
+              print('Error parsing product for doc ID: ${doc.id}, error: $e');
+              return null;
+            }
+          })
+          .where((product) => product != null)
+          .cast<Product>()
           .toList();
-      print('Parsed products: ${products.map((p) => p.name).toList()}');
+      print('Parsed valid products: ${products.map((p) => p.name).toList()}');
       _productsController.add(products);
     } catch (e, stackTrace) {
       print('Error fetching products: $e\nStackTrace: $stackTrace');
