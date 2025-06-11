@@ -4,13 +4,10 @@
   <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
-
     The path provided below has to start and end with a slash "/" in order for
     it to work correctly.
-
     For more details:
     * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
@@ -31,6 +28,24 @@
 
   <title>tokopedia_clone</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Tambahkan Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js"></script>
+  <script>
+    // Konfigurasi Firebase Anda
+    var firebaseConfig = {
+      apiKey: "AIzaSyDqTCTZH0ErjeQEUz-tG2kxed8n2G31usA",
+      authDomain: "tokopediaclone-43eb0.firebaseapp.com",
+      projectId: "tokopediaclone-43eb0",
+      storageBucket: "tokopediaclone-43eb0.firebasestorage.app",
+      messagingSenderId: "477540393781",
+      appId: "1:477540393781:web:ade7b42a2f0ecede0aa27c"
+    };
+    // Inisialisasi Firebase
+    firebase.initializeApp(firebaseConfig);
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
