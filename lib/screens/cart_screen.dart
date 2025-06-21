@@ -77,15 +77,6 @@ class CartScreen extends StatelessWidget {
                                 'Rp ${cartItem.product.price.toStringAsFixed(0)}',
                                 style: const TextStyle(fontSize: 14, color: Utils.mainThemeColor),
                               ),
-                              if ((cartItem.product.discount ?? 0) > 0)
-                                Text(
-                                  'Rp ${(cartItem.product.priceBeforeDiscount ?? cartItem.product.price).toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                    decoration: TextDecoration.lineThrough,
-                                  ),
-                                ),
                             ],
                           ),
                           trailing: Row(

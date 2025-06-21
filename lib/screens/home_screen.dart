@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tokopedia_clone/models/product.dart';
 import 'package:tokopedia_clone/providers/cart.dart';
-import 'package:tokopedia_clone/providers/wishlist.dart';
 import 'package:tokopedia_clone/services/product_service.dart';
 import 'package:tokopedia_clone/utils/utils.dart';
 
@@ -49,14 +48,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 _searchQuery = value;
               });
             },
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               hintText: 'Cari di Tokopedia',
-              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+              prefixIcon: Icon(Icons.search, color: Colors.grey),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 10,
-                horizontal: 12,
-              ),
+              contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             ),
           ),
         ),
@@ -82,8 +78,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         const Icon(Icons.error_outline, color: Colors.red, size: 40),
                         const SizedBox(height: 10),
-                        Text('Terjadi kesalahan: ${snapshot.error.toString().split('\n').first}',
-                            style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
+                        Text(
+                          'Terjadi kesalahan: ${snapshot.error.toString().split('\n').first}',
+                          style: const TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center,
+                        ),
                         const SizedBox(height: 10),
                         ElevatedButton(
                           onPressed: () => productService.fetchProducts(),
@@ -93,18 +92,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                 }
+
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
                     child: CircularProgressIndicator(color: Utils.mainThemeColor),
                   );
                 }
+
                 List<Product> products = snapshot.data ?? [];
-                // Apply search filter
+
+                // Filter pencarian
                 if (_searchQuery.isNotEmpty) {
-                  products = products.where((prod) =>
-                    prod.name.toLowerCase().contains(_searchQuery.toLowerCase())
-                  ).toList();
+                  products = products
+                      .where((prod) => prod.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+                      .toList();
                 }
+
                 if (products.isEmpty) {
                   return const Center(
                     child: Column(
@@ -142,49 +145,51 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Stack(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                                      child: product.imageURL.isNotEmpty
-                                          ? Image.network(
-                                              product.imageURL,
-                                              fit: BoxFit.cover,
-                                              width: double.infinity,
-                                              height: 100,
-                                              errorBuilder: (context, error, stackTrace) {
-                                                return Container(
-                                                  height: 100,
-                                                  color: Colors.grey[200],
-                                                  child: const Icon(Icons.image_not_supported, size: 100, color: Colors.grey),
-                                                );
-                                              },
-                                            )
-                                          : Container(
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                                  child: product.imageURL.isNotEmpty
+                                      ? Image.network(
+                                          product.imageURL,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: 100,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
                                               height: 100,
                                               color: Colors.grey[200],
                                               child: const Icon(Icons.image_not_supported, size: 100, color: Colors.grey),
-                                            ),
-                                    ),
-                                    if (product.discount != null)
-                                      Positioned(
-                                        top: 6,
-                                        right: 6,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          color: Colors.red,
-                                          child: Text('${product.discount}%', style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
+                                            );
+                                          },
+                                        )
+                                      : Container(
+                                          height: 100,
+                                          color: Colors.grey[200],
+                                          child: const Icon(Icons.image_not_supported, size: 100, color: Colors.grey),
                                         ),
-                                      ),
-                                  ],
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.all(8.0),
-                                  child: Text(product.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    product.name,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                  child: Text('Rp ${product.price.toStringAsFixed(0)}', style: const TextStyle(fontSize: 14, color: Color.fromARGB(255, 179, 0, 0), fontWeight: FontWeight.bold)),
+                                  child: Text(
+                                    'Rp ${product.price.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Color.fromARGB(255, 179, 0, 0),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2),
@@ -192,13 +197,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                     children: [
                                       Icon(Icons.star, color: Colors.yellow[700], size: 16),
                                       const SizedBox(width: 4),
-                                      Expanded(child: Text('${product.rating} • ${product.soldCount}+ terjual', style: TextStyle(fontSize: 12, color: Colors.grey[600]), overflow: TextOverflow.ellipsis)),
+                                      Expanded(
+                                        child: Text(
+                                          '${product.rating} • ${product.soldCount}+ terjual',
+                                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                  child: Text(product.location, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                                  child: Text(
+                                    product.location,
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                  ),
                                 ),
                               ],
                             ),

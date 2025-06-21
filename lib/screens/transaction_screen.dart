@@ -1,233 +1,275 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction; // Sembunyikan Transaction dari cloud_firestore
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:tokopedia_clone/models/transaction.dart';
 import 'package:tokopedia_clone/providers/auth.dart';
 import 'package:tokopedia_clone/utils/utils.dart';
-import 'package:intl/intl.dart';
 
-class TransactionScreen extends StatelessWidget {
+class TransactionScreen extends StatefulWidget {
+  @override
+  _TransactionScreenState createState() => _TransactionScreenState();
+}
+
+class _TransactionScreenState extends State<TransactionScreen> {
+  Transaction? selectedTransaction;
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
 
-    // Verifikasi pengguna yang login
     if (authService.currentUser == null) {
       return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.lock, size: 50, color: Colors.grey),
-              SizedBox(height: 10),
-              Text(
-                'Silakan login terlebih dahulu',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/login');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Utils.mainThemeColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                child: Text('Login', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        ),
+        body: Center(child: Text("Silakan login terlebih dahulu.")),
       );
     }
 
-    // Tambahkan log untuk memverifikasi UID pengguna
-    print('Current user UID: ${authService.currentUser?.uid}');
-
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: Text(
-          'Riwayat Transaksi',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          selectedTransaction == null ? 'Transaksi' : 'Detail Pesanan',
+          style: TextStyle(color: Colors.black),
         ),
-        backgroundColor: Utils.mainThemeColor,
-        elevation: 2,
+        leading: selectedTransaction != null
+            ? IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.black),
+                onPressed: () => setState(() => selectedTransaction = null),
+              )
+            : null,
+        elevation: 1,
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('transactions')
-            .where('userId', isEqualTo: authService.currentUser!.uid)
-            .orderBy('timestamp', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          // Penanganan kesalahan yang lebih spesifik
-          if (snapshot.hasError) {
-            String errorMessage = snapshot.error.toString();
-            print('Error fetching transactions: $errorMessage');
-            if (errorMessage.contains('permission-denied')) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.lock_outline, size: 40, color: Colors.red),
-                    SizedBox(height: 10),
-                    Text(
-                      'Anda tidak memiliki izin untuk mengakses data ini.',
-                      style: TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, '/login');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Utils.mainThemeColor,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: Text('Login Ulang', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              );
-            } else {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 40, color: Colors.red),
-                    SizedBox(height: 10),
-                    Text(
-                      'Terjadi kesalahan: $errorMessage',
-                      style: TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, '/transactions');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Utils.mainThemeColor,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: Text('Coba Lagi', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              );
-            }
-          }
+      body: selectedTransaction == null
+          ? _buildTransactionList(authService.currentUser!.uid)
+          : _buildTransactionDetail(selectedTransaction!),
+    );
+  }
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator(color: Utils.mainThemeColor));
-          }
+  Widget _buildTransactionList(String userId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('transactions')
+          .where('userId', isEqualTo: userId)
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text("Gagal memuat data"));
+        }
 
-          final data = snapshot.data;
-          if (data == null || data.docs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.history, size: 40, color: Colors.grey),
-                  SizedBox(height: 10),
-                  Text(
-                    'Tidak ada riwayat transaksi',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/products'); // Arahkan ke halaman produk
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Utils.mainThemeColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: Text('Belanja Sekarang', style: TextStyle(color: Colors.white)),
-                  ),
-                ],
-              ),
-            );
-          }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
 
-          final transactions = data.docs
-              .map((doc) => Transaction.fromFirestore(doc.data() as Map<String, dynamic>, doc.id))
-              .toList();
+        final transactions = snapshot.data!.docs.map((doc) {
+          return Transaction.fromFirestore(doc.data() as Map<String, dynamic>, doc.id);
+        }).toList();
 
-          return ListView.builder(
-            padding: EdgeInsets.all(12),
-            itemCount: transactions.length,
-            itemBuilder: (context, index) {
-              final transaction = transactions[index];
-              return Card(
+        if (transactions.isEmpty) {
+          return Center(child: Text("Belum ada transaksi"));
+        }
+
+        return ListView.builder(
+          padding: EdgeInsets.all(12),
+          itemCount: transactions.length,
+          itemBuilder: (context, index) {
+            final t = transactions[index];
+
+            final firstItem = (t.items?.isNotEmpty ?? false) ? t.items!.first : {};
+            final imageURL = firstItem['imageURL'] ?? '';
+            final productName = firstItem['name'] ?? 'Produk tidak diketahui';
+
+            return GestureDetector(
+              onTap: () => setState(() => selectedTransaction = t),
+              child: Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                margin: EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   contentPadding: EdgeInsets.all(12),
-                  leading: _getStatusIcon(transaction.status),
-                  title: Text(
-                    'Transaksi #${transaction.id.substring(0, 8)}',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 4),
-                      Text(
-                        'Total: Rp ${transaction.totalPrice.toStringAsFixed(0)}',
-                        style: TextStyle(fontSize: 14, color: Utils.mainThemeColor),
-                      ),
-                      Text(
-                        'Tanggal: ${DateFormat('dd MMM yyyy HH:mm').format(transaction.timestamp)}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                  trailing: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/transaction_detail',
-                        arguments: transaction,
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Utils.mainThemeColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  leading: imageURL != ''
+                      ? Image.network(imageURL, width: 50, height: 50, fit: BoxFit.cover)
+                      : Container(width: 50, height: 50, color: Colors.grey[300]),
+                  title: Text(productName, maxLines: 1),
+                  subtitle: Text('Total Belanja: Rp${t.totalPrice.toStringAsFixed(0)}'),
+                  trailing: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green[100],
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text(
-                      'Lihat Detail',
-                      style: TextStyle(fontSize: 12, color: Colors.white),
-                    ),
+                    child: Text(t.status ?? '', style: TextStyle(fontSize: 12)),
                   ),
                 ),
-              );
-            },
-          );
-        },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTransactionDetail(Transaction t) {
+    final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+
+    final firstItem = (t.items?.isNotEmpty ?? false) ? t.items!.first : {};
+    final imageURL = firstItem['imageURL'] ?? '';
+    final productName = firstItem['name'] ?? 'Produk tidak diketahui';
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _section(
+          title: 'No. Pesanan: ${t.id}',
+          trailing: TextButton(
+            onPressed: () {},
+            child: Text('Lihat Invoice', style: TextStyle(color: Colors.green)),
+          ),
+          children: [
+            _infoRow('Tanggal Pembelian', DateFormat('dd MMM yyyy, HH:mm').format(t.timestamp) + ' WIB'),
+            _infoRow('Selesai Otomatis', DateFormat('dd MMM, HH:mm').format(t.timestamp.add(Duration(days: 6))) + ' WIB', highlight: true),
+          ],
+        ),
+        SizedBox(height: 16),
+        _section(
+          title: 'Detail Produk',
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: imageURL != ''
+                      ? Image.network(
+                          imageURL,
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(width: 50, height: 50, color: Colors.grey[300]),
+                        )
+                      : Container(width: 50, height: 50, color: Colors.grey[300]),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Dilindungi Proteksi', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text(productName, style: TextStyle(fontWeight: FontWeight.bold)),
+                      SizedBox(height: 4),
+                      Text('1 x ${currency.format(t.totalPrice)}'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        SizedBox(height: 16),
+        _section(
+          leadingIcon: Icons.verified_user,
+          title: 'Kamu pakai proteksi di transaksi ini',
+          subtitle: 'Setelah pesanan selesai, kamu bisa cek polis dan ajukan',
+          trailingIcon: Icons.arrow_forward_ios,
+          color: Colors.blue[50],
+        ),
+        SizedBox(height: 16),
+        _section(
+          title: 'Info Pengiriman',
+          trailing: TextButton(
+            onPressed: () {},
+            child: Text('Lihat Detail', style: TextStyle(color: Colors.green)),
+          ),
+          children: [
+            _infoRow('Kurir', 'Standard GRATIS ONGKIR', highlight: true),
+            _infoRow('No Resi', t.trackingNumber ?? 'TKP5030291880'),
+            _infoRow('Alamat', t.address ?? 'Alamat tidak tersedia', multiline: true),
+          ],
+        ),
+        SizedBox(height: 16),
+        _section(
+          title: 'Rincian Pembayaran',
+          children: [
+            _infoRow('Metode Pembayaran', t.paymentOption ?? 'COD (Bayar di Tempat)'),
+            SizedBox(height: 8),
+            _priceRow('Subtotal Harga Barang', t.subtotal ?? 0),
+            _priceRow('Total Ongkos Kirim', t.shippingCost ?? 0),
+            _priceRow('Proteksi Produk', t.protectionFee ?? 0),
+            _priceRow('Asuransi Pengiriman', t.insuranceFee ?? 0),
+            _priceRow('Biaya COD', t.codFee ?? 0),
+            Divider(),
+            _priceRow('Total Belanja', t.totalPrice, bold: true),
+            SizedBox(height: 4),
+            Text('Belum termasuk biaya transaksi. Cek detailnya di invoice, ya.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+      ]),
+    );
+  }
+
+  Widget _section({
+    required String title,
+    List<Widget>? children,
+    Widget? trailing,
+    IconData? leadingIcon,
+    String? subtitle,
+    IconData? trailingIcon,
+    Color? color,
+  }) {
+    return Card(
+      color: color ?? Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(
+            children: [
+              if (leadingIcon != null) Icon(leadingIcon, color: Colors.blue),
+              if (leadingIcon != null) SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+                    if (subtitle != null)
+                      Text(subtitle, style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+                  ],
+                ),
+              ),
+              if (trailingIcon != null) Icon(trailingIcon, size: 16),
+              if (trailing != null) trailing,
+            ],
+          ),
+          if (children != null) ...[SizedBox(height: 12), ...children],
+        ]),
       ),
     );
   }
 
-  Widget _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'dibayar':
-        return Icon(Icons.payment, color: Utils.mainThemeColor, size: 30);
-      case 'diproses':
-        return Icon(Icons.hourglass_empty, color: Utils.mainThemeColor, size: 30);
-      case 'dikirim':
-        return Icon(Icons.local_shipping, color: Utils.mainThemeColor, size: 30);
-      case 'selesai':
-        return Icon(Icons.check_circle, color: Utils.mainThemeColor, size: 30);
-      case 'dibatalkan':
-        return Icon(Icons.cancel, color: Colors.red, size: 30);
-      default:
-        return Icon(Icons.help_outline, color: Colors.grey, size: 30);
-    }
+  Widget _infoRow(String label, String value, {bool highlight = false, bool multiline = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          Container(width: 120, child: Text(label, style: TextStyle(color: Colors.grey))),
+          Expanded(child: Text(value, style: TextStyle(color: highlight ? Colors.green : Colors.black))),
+        ],
+      ),
+    );
+  }
+
+  Widget _priceRow(String label, double amount, {bool bold = false}) {
+    final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
+          Text(format.format(amount), style: TextStyle(fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
+        ],
+      ),
+    );
   }
 }

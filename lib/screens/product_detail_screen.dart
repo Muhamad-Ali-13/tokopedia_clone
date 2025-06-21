@@ -16,17 +16,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final cart = Provider.of<Cart>(context, listen: false);
     final wishlist = Provider.of<Wishlist>(context);
     final productMap = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final product = productMap != null && productMap['id'] != null
-        ? Product.fromJson(productMap, productMap['id'] as String)
-        : null;
 
-    if (product == null || product.id == null) {
+    if (productMap == null || productMap['id'] == null) {
       return Scaffold(
-        body: Center(
-          child: Text('Error: Product data not provided or invalid'),
+        appBar: AppBar(
+          title: Text('Produk Tidak Ditemukan'),
         ),
+        body: Center(child: Text('Error: Data produk tidak ditemukan.')),
       );
     }
+
+    final product = Product.fromJson(productMap, productMap['id'] as String);
+    final bool isInWishlist = wishlist.items.any((item) => item.id == product.id);
 
     return Scaffold(
       appBar: AppBar(
@@ -48,22 +49,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Responsive image container
             AspectRatio(
               aspectRatio: 1.0,
               child: product.imageURL != null && product.imageURL!.isNotEmpty
                   ? Image.network(
                       product.imageURL!,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Icon(Icons.broken_image, size: 80, color: Colors.grey),
-                        );
-                      },
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Icon(Icons.broken_image, size: 80, color: Colors.grey),
+                      ),
                     )
-                  : Center(
-                      child: Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
-                    ),
+                  : Center(child: Icon(Icons.image_not_supported, size: 80, color: Colors.grey)),
             ),
             Padding(
               padding: const EdgeInsets.all(16),
@@ -75,25 +71,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          product.name ?? 'Unnamed Product',
+                          product.name ?? 'Produk Tanpa Nama',
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      // Wishlist button with live update
                       IconButton(
                         icon: Icon(
-                          wishlist.items.any((item) => item.id == product.id)
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: wishlist.items.any((item) => item.id == product.id)
-                              ? Colors.red
-                              : Colors.grey,
+                          isInWishlist ? Icons.favorite : Icons.favorite_border,
+                          color: isInWishlist ? Colors.red : Colors.grey,
                         ),
                         onPressed: () {
                           setState(() {
-                            if (wishlist.items.any((item) => item.id == product.id)) {
+                            if (isInWishlist) {
                               wishlist.removeItem(product.id!);
                             } else {
                               wishlist.addItem(product);
@@ -104,43 +95,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ],
                   ),
                   SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        'Rp ${product.price?.toStringAsFixed(0) ?? '0'}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (product.discount != null) ...[
-                        SizedBox(width: 8),
-                        Text(
-                          'Rp ${(product.price! * (1 - (product.discount! / 100))).toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          '${product.discount!.toStringAsFixed(0)}%',
-                          style: TextStyle(fontSize: 14, color: Colors.red),
-                        ),
-                      ],
-                    ],
+                  Text(
+                    'Rp ${product.price?.toStringAsFixed(0) ?? '0'}',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.star, color: Colors.yellow, size: 16),
+                      Icon(Icons.star, color: Colors.yellow[700], size: 16),
                       SizedBox(width: 4),
                       Text(
-                        '${product.rating?.toStringAsFixed(1) ?? '0.0'} (${product.soldCount ?? 0}) • Foto ulasan • Terjual',
+                        '${product.rating?.toStringAsFixed(1) ?? '0.0'} (${product.soldCount ?? 0}) • Terjual',
                         style: TextStyle(fontSize: 14, color: Colors.grey),
                       ),
                     ],
@@ -170,9 +139,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child: Text('Beli Langsung', style: TextStyle(color: Colors.white)),
                 ),
@@ -183,9 +150,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   onPressed: () => cart.addItem(product),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.green),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child: Text('+ Keranjang', style: TextStyle(color: Colors.green)),
                 ),
